@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>The Photobooth by Aadya</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive;
+      background-color: #e0b8c5;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    .curtain-container {
+      position: relative;
+      height: 100vh;
+      background-color: black;
+    }
+
+    .curtain {
+      position: absolute;
+      top: 0;
+      width: 50%;
+      height: 100%;
+      background-color: rgb(177, 22, 53);
+      z-index: 2;
+      transition: transform 1s ease;
+    }
+
+    .left-curtain {
+      left: 0;
+    }
+
+    .right-curtain {
+      right: 0;
+    }
+
+    #startBtn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      font-size: 1.5em;
+      background-color: pink;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      z-index: 3;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
+      font-size: 1.2em;
+      color: white;
+      text-shadow: 1px 1px 3px #000;
+    }
+
+    .heart {
+      color: rgb(206, 71, 138);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .newspaper {
+      background: rgb(235, 235, 235);
+      padding: 30px;
+      max-width: 600px;
+      margin: 40px auto;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 20px;
+    }
+
+    .newspaper h1 {
+      font-size: 2em;
+    }
+
+    #clickBtn, #readyBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      background-color: lavenderblush;
+      border: 2px solid pink;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .camera-frame {
+      position: relative;
+      width: 40%;
+      margin: auto;
+      border: 10px solid black;
+      background: black;
+    }
+
+    video, canvas {
+      width: 100%;
+      height: auto;
+    }
+
+    #countdown {
+      font-size: 3em;
+      color: red;
+      margin-top: 10px;
+    }
+
+    .side-thumbs {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .side-thumbs img {
+      width: 100px;
+      height: auto;
+      border: 2px solid pink;
+      border-radius: 8px;
+    }
+
+    .final-strip {
+      margin-top: 30px;
+    }
+
+    .final-strip img {
+      width: 200px;
+      margin: 10px;
+      border: 5px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="curtain-container">
+    <div class="curtain left-curtain"></div>
+    <div class="curtain right-curtain"></div>
+    <button id="startBtn">Start</button>
+    <footer>
+      <p>THE PHOTOBOOTH by Aadya <span class="heart">♡</span></p>
+    </footer>
+  </div>
+
+  <div id="aboutPage" class="hidden">
+    <div class="newspaper">
+      <h1>🗞️ The Photobooth Times</h1>
+      <h2>✨ A New Era of Memories Begins! ✨</h2>
+      <p>Once upon a giggle and a click, this magical booth was created to capture the cutest moments in the cutest way possible.</p>
+      <p>Whether you're solo, with your bestie, or someone special — 3 clicks later, a memory is yours forever.</p>
+      <p class="signature">— With love, Aadya 💖</p>
+      <button id="clickBtn">3 2 1 Click!</button>
+    </div>
+  </div>
+
+  <div id="cameraPage" class="hidden">
+    <h2>Say cheese! 📸</h2>
+    <div class="camera-frame">
+      <video id="video" autoplay></video>
+      <canvas id="canvas" class="hidden"></canvas>
+    </div>
+    <div id="countdown" class="hidden">3</div>
+    <button id="readyBtn">Ready!</button>
+    <div class="side-thumbs" id="sideThumbs"></div>
+  </div>
+
+  <div id="finalPage" class="hidden">
+    <h2>Your Memory Strip 💖</h2>
+    <div class="final-strip" id="finalStrip"></div>
+    <div id="colorOptions" style="margin-top: 20px;">
+      <h3>Choose Your Frame Color 🎨</h3>
+      <div id="colorChoices" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;"></div>
+    </div>
+    <p>Hope you had fun!</p>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const leftCurtain = document.querySelector(".left-curtain");
+    const rightCurtain = document.querySelector(".right-curtain");
+    const aboutPage = document.getElementById("aboutPage");
+    const clickBtn = document.getElementById("clickBtn");
+    const cameraPage = document.getElementById("cameraPage");
+    const readyBtn = document.getElementById("readyBtn");
+    const countdown = document.getElementById("countdown");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const sideThumbs = document.getElementById("sideThumbs");
+    const finalPage = document.getElementById("finalPage");
+    const finalStrip = document.getElementById("finalStrip");
+
+    let photoCount = 0;
+    let photos = [];
+
+    startBtn.addEventListener("click", () => {
+      leftCurtain.style.transform = "translateX(-100%)";
+      rightCurtain.style.transform = "translateX(100%)";
+      startBtn.style.display = "none";
+
+      setTimeout(() => {
+        document.querySelector(".curtain-container").classList.add("hidden");
+        aboutPage.classList.remove("hidden");
+      }, 1000);
+    });
+
+    clickBtn.addEventListener("click", () => {
+      aboutPage.classList.add("hidden");
+      cameraPage.classList.remove("hidden");
+      startCamera();
+    });
+
+    function startCamera() {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+          video.srcObject = stream;
+        })
+        .catch(() => alert("Camera not working!"));
+    }
+
+    readyBtn.addEventListener("click", () => {
+      let count = 3;
+      countdown.textContent = count;
+      countdown.classList.remove("hidden");
+
+      const interval = setInterval(() => {
+        count--;
+        countdown.textContent = count;
+        if (count === 0) {
+          clearInterval(interval);
+          countdown.classList.add("hidden");
+          takePicture();
+        }
+      }, 1000);
+    });
+
+    function takePicture() {
+      const context = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.filter = "grayscale(100%)";
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const dataURL = canvas.toDataURL("image/png");
+      photos.push(dataURL);
+      updateThumbnails(dataURL);
+
+      photoCount++;
+      if (photoCount === 3) {
+        cameraPage.classList.add("hidden");
+        showFinalPhotos();
+      }
+    }
+
+    function updateThumbnails(src) {
+      const img = document.createElement("img");
+      img.src = src;
+      sideThumbs.appendChild(img);
+    }
+
+    function showFinalPhotos() {
+      finalPage.classList.remove("hidden");
+      finalStrip.innerHTML = "";
+      document.getElementById("colorChoices").innerHTML = "";
+
+      photos.forEach(src => {
+        const img = document.createElement("img");
+        img.src = src;
+        finalStrip.appendChild(img);
+      });
+
+      const colors = [
+        { name: "Pastel Pink", hex: "#FFB6C1" },
+        { name: "Pastel Blue", hex: "#AEC6CF" },
+        { name: "Mint Green", hex: "#C1E1C1" },
+        { name: "Lavender", hex: "#E6E6FA" },
+        { name: "Peach", hex: "#FFDAB9" },
+        { name: "Classic White", hex: "#FFFFFF" },
+        { name: "Classic Black", hex: "#000000" },
+        { name: "Soft Yellow", hex: "#FFFACD" }
+      ];
+
+      const colorChoices = document.getElementById("colorChoices");
+      colors.forEach(color => {
+        const btn = document.createElement("button");
+        btn.textContent = color.name;
+        btn.style.backgroundColor = color.hex;
+        btn.style.border = "2px solid #888";
+        btn.style.padding = "10px";
+        btn.style.borderRadius = "10px";
+        btn.style.cursor = "pointer";
+        btn.style.color = color.hex === "#000000" ? "white" : "black";
+        btn.onclick = () => generatePhotoStrip(color.hex);
+        colorChoices.appendChild(btn);
+      });
+    }
+
+    function generatePhotoStrip(frameColor = "#FFB6C1") {
+      const stripCanvas = document.createElement("canvas");
+      const imgWidth = 300;
+      const imgHeight = 400;
+      const spacing = 20;
+
+      stripCanvas.width = imgWidth;
+      stripCanvas.height = imgHeight * 3 + spacing * 2;
+      const ctx = stripCanvas.getContext("2d");
+
+      ctx.fillStyle = frameColor;
+      ctx.fillRect(0, 0, stripCanvas.width, stripCanvas.height);
+
+      photos.forEach((src, i) => {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, i * (imgHeight + spacing), imgWidth, imgHeight);
+          if (i === 2) {
+            const downloadLink = document.createElement("a");
+            downloadLink.href = stripCanvas.toDataURL("image/png");
+            downloadLink.download = "memory-strip.png";
+            downloadLink.textContent = "Download Your Memory Strip 💌";
+            downloadLink.style.display = "inline-block";
+            downloadLink.style.marginTop = "20px";
+            downloadLink.style.fontSize = "1.2em";
+            downloadLink.style.backgroundColor = "pink";
+            downloadLink.style.padding = "10px 20px";
+            downloadLink.style.borderRadius = "10px";
+
+            const oldLink = document.querySelector("#finalPage a");
+            if (oldLink) oldLink.remove();
+
+            document.getElementById("finalPage").appendChild(downloadLink);
+          }
+        };
+        img.src = src;
+      });
+    }
+  </script>
+
+  <!-- ... [keep your full code as-is until the end of your current script tag] -->
+
+<!-- Add this after your finalStrip section -->
+<div id="letterSection" class="hidden">
+    <h2>Write a Memory ✍️</h2>
+    <div class="letter-container">
+      <div class="feather-pen"></div>
+      <textarea id="memoryText" placeholder="Once upon a time, in a photobooth far away..." maxlength="400"></textarea>
+    </div>
+    <button id="exportBtn">Include Letter in Strip 💖</button>
+  </div>
+  
+  <style>
+    #letterSection {
+      background-color: #fff0f5;
+      padding: 30px;
+      margin-top: 40px;
+    }
+  
+    .letter-container {
+      position: relative;
+      margin: 0 auto;
+      max-width: 600px;
+      background: #fefefe;
+      border: 2px solid #ccc;
+      border-radius: 20px;
+      padding: 20px;
+      font-family: 'Dancing Script', cursive;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+  
+    textarea#memoryText {
+      width: 100%;
+      height: 200px;
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.3em;
+      border: none;
+      outline: none;
+      resize: none;
+      background: transparent;
+      line-height: 1.6;
+    }
+  
+    .feather-pen {
+      position: absolute;
+      bottom: -40px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background-image: url('https://cdn-icons-png.flaticon.com/512/495/495044.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      animation: featherWriting 4s infinite;
+    }
+  
+    @keyframes featherWriting {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      50% { transform: translate(-5px, -5px) rotate(-5deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+  </style>
+  
+  <script>
+    function showFinalPhotos() {
+      finalPage.classList.remove("hidden");
+      finalStrip.innerHTML = "";
+      document.getElementById("colorChoices").innerHTML = "";
+  
+      photos.forEach(src => {
+        const img = document.createElement("img");
+        img.src = src;
+        finalStrip.appendChild(img);
+      });
+  
+      const colors = [
+        { name: "Pastel Pink", hex: "#FFB6C1" },
+        { name: "Pastel Blue", hex: "#AEC6CF" },
+        { name: "Mint Green", hex: "#C1E1C1" },
+        { name: "Lavender", hex: "#E6E6FA" },
+        { name: "Peach", hex: "#FFDAB9" },
+        { name: "Classic White", hex: "#FFFFFF" },
+        { name: "Classic Black", hex: "#000000" },
+        { name: "Soft Yellow", hex: "#FFFACD" }
+      ];
+  
+      const colorChoices = document.getElementById("colorChoices");
+      colors.forEach(color => {
+        const btn = document.createElement("button");
+        btn.textContent = color.name;
+        btn.style.backgroundColor = color.hex;
+        btn.style.border = "2px solid #888";
+        btn.style.padding = "10px";
+        btn.style.borderRadius = "10px";
+        btn.style.cursor = "pointer";
+        btn.style.color = color.hex === "#000000" ? "white" : "black";
+        btn.onclick = () => {
+          generatePhotoStrip(color.hex);
+          document.getElementById("letterSection").classList.remove("hidden");
+        };
+        colorChoices.appendChild(btn);
+      });
+    }
+  
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const memory = document.getElementById("memoryText").value;
+      const canvasExport = document.createElement("canvas");
+      const width = 600;
+      const imgWidth = 300;
+      const imgHeight = 400;
+      const spacing = 20;
+      const textHeight = 200;
+  
+      canvasExport.width = width;
+      canvasExport.height = imgHeight * 3 + spacing * 2 + textHeight + 60;
+  
+      const ctx = canvasExport.getContext("2d");
+      ctx.fillStyle = "#fff0f5";
+      ctx.fillRect(0, 0, canvasExport.width, canvasExport.height);
+  
+      photos.forEach((src, i) => {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, (width - imgWidth) / 2, i * (imgHeight + spacing), imgWidth, imgHeight);
+          if (i === 2) drawText();
+        };
+        img.src = src;
+      });
+  
+      function drawText() {
+        ctx.fillStyle = "#000";
+        ctx.font = "24px 'Dancing Script', cursive";
+        const lines = memory.split('\n');
+        let startY = imgHeight * 3 + spacing * 2 + 40;
+        lines.forEach(line => {
+          ctx.fillText(line, 40, startY);
+          startY += 30;
+        });
+  
+        const link = document.createElement("a");
+        link.href = canvasExport.toDataURL("image/png");
+        link.download = "memory-strip-letter.png";
+        link.textContent = "Download Combined Strip & Letter ✨";
+        link.style.display = "inline-block";
+        link.style.marginTop = "20px";
+        link.style.fontSize = "1.2em";
+        link.style.backgroundColor = "plum";
+        link.style.padding = "10px 20px";
+        link.style.borderRadius = "10px";
+  
+        const oldLink = document.querySelector("#letterSection a");
+        if (oldLink) oldLink.remove();
+        document.getElementById("letterSection").appendChild(link);
+      }
+    });
+  </script>
+</body>
+</html>
